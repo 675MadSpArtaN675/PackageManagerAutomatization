@@ -2,7 +2,9 @@ mod utility;
 pub mod command_struct;
 
 mod parsers;
-pub mod packet_manager;
+mod packet_manager;
+
+pub use packet_manager::PacketManagerCommandExecutor;
 
 #[cfg(test)]
 mod tests {

@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 itertools = "0.15.0"
+log = "0.4.33"
 regex = "1.13.1"
