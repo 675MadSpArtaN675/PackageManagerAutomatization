@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::parsers::{fill_error_performers, fill_performers};
+use crate::parsers::{ParserGetter, ParsersGetterTrait};
 
 use crate::utility::{PacketManagerResultCode, Stage, ErroredPacket, FoundPackage, Repository, create_packages, create_repo};
 use crate::utility::constants::{PACKAGE_SIZE, REPO_SIZE};
@@ -25,7 +25,9 @@ pub struct PacketManagerCommandExecutor
 
     pub(crate) package_index_step: [i32; PACKAGE_SIZE],
     pub(crate) repo_index_step: [i32; REPO_SIZE],
-    pub(crate) yes_pointer_str: String
+    pub(crate) yes_pointer_str: String,
+
+    pub parsers: Option<ParserGetter>
 }
 
 impl PacketManagerCommandExecutor {
@@ -39,7 +41,8 @@ impl PacketManagerCommandExecutor {
             stage_errors_performers: HashMap::new(),
             package_index_step: [0; 4],
             repo_index_step: [0; 3],
-            yes_pointer_str: String::new()
+            yes_pointer_str: String::new(),
+            parsers: None
         };
     }
 
@@ -52,13 +55,42 @@ impl PacketManagerCommandExecutor {
             stage_errors_performers: HashMap::new(),
             package_index_step: [0; 4],
             repo_index_step: [0; 3],
-            yes_pointer_str: String::new()
+            yes_pointer_str: String::new(),
+            parsers: None
         };
 
-        fill_error_performers(&base_name.clone(), &mut pm_executer.stage_errors_performers, &pm_executer.errored_packages);
-        fill_performers(&mut pm_executer);
+        let mut parsers = ParserGetter::new();
+
+        let executer_ref: &mut PacketManagerCommandExecutor = &mut pm_executer;
+        parsers.fill_error_performers(executer_ref);
+        parsers.fill_performers(executer_ref);
+
+        pm_executer.parsers = Some(parsers);
 
         return pm_executer;
+    }
+
+    pub fn recreate(mut self, new_base_name: String) -> PacketManagerCommandExecutor {
+        self.errored_packages.borrow_mut().clear();
+        self.valid_lines.borrow_mut().clear();
+        self.stage_performers.clear();
+        self.stage_errors_performers.clear();
+
+        let parsers_opt: Option<ParserGetter> = self.parsers;
+        self.parsers = None;
+
+        self.command_obj = PacketManagerCommand::new(new_base_name);
+
+        if let Some(mut parsers) = parsers_opt {
+            let executor_reference = &mut self;
+
+            parsers.fill_performers(executor_reference);
+            parsers.fill_error_performers(executor_reference);
+
+            self.parsers = Some(parsers);
+        }
+
+        return self;
     }
 }
 

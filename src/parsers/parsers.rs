@@ -1,4 +1,5 @@
-use std::{ops::DerefMut, rc::Rc};
+use std::fmt::Error;
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -6,51 +7,66 @@ use crate::utility::{ErroredPacket, Stage};
 use crate::command_struct::packet_manager_trait::ParserOutput;
 use crate::packet_manager::PacketManagerCommandExecutor;
 
-use super::zypper_module::{zypper_parse_install_errors, print_line, parse_table};
+use super::zypper_module::{zypper_error_preprocessing, zypper_preprocessing};
 
-pub fn fill_error_performers(packet_manager_name: &String, base_map_of_functions: &mut HashMap<Stage, ParserOutput>, errored_packets_collection: &Rc<RefCell<Vec<ErroredPacket>>>) {
-    let name = packet_manager_name.as_str();
-    match name {
-        "zypper" => {
-            let errored_packages = errored_packets_collection.clone();
-            base_map_of_functions.insert(Stage::Install, Box::new(move |line: &mut String| {
-                let mut _pack_list: Vec<String> = Vec::new();
-                zypper_parse_install_errors(line, &mut _pack_list);
+pub trait ParsersGetterTrait {
+    fn fill_error_performers(&mut self, packet_manager_obj: &mut PacketManagerCommandExecutor);
+    fn fill_performers(&mut self, packet_manager_obj: &mut PacketManagerCommandExecutor);
+}
 
-                errored_packages.borrow_mut().extend(_pack_list.iter().map(|item| ErroredPacket { name: item.clone(), stage: Stage::Install}));
-            }));
-        },
+type Performer = Box<dyn FnMut(&mut PacketManagerCommandExecutor)>;
+type ErrorPerformer = Box<dyn FnMut(&mut HashMap<Stage, ParserOutput>, &ErrorPacketCollection)>;
+type ErrorPacketCollection = Rc<RefCell<Vec<ErroredPacket>>>;
 
-        _ => {}
+pub struct ParserGetter {
+    standard_performers: HashMap<String, Performer>,
+    errors_performers: HashMap<String, ErrorPerformer>
+}
+
+impl ParserGetter {
+    pub fn new() -> ParserGetter {
+        let mut _getters_configurer = ParserGetter {standard_performers: HashMap::new(), errors_performers: HashMap::new()};
+
+        _getters_configurer.standard_performers.insert(
+            "zypper".to_string(), Box::new(
+            |packet_manager_obj: &mut PacketManagerCommandExecutor| zypper_preprocessing(packet_manager_obj)
+        ));
+
+        _getters_configurer.errors_performers.insert(
+            "zypper".to_string(),
+         Box::new(
+            |base_map_of_functions: &mut HashMap<Stage, ParserOutput>, errored_packets_collection: &ErrorPacketCollection| zypper_error_preprocessing(base_map_of_functions, errored_packets_collection)
+        ));
+
+        return _getters_configurer;
     }
 }
 
-pub fn fill_performers(packet_manager_obj: &mut PacketManagerCommandExecutor) {
-    let packet_manager_name: String = packet_manager_obj.command_obj.basic_command.clone();
-    let name: &str = packet_manager_name.as_str();
+impl ParsersGetterTrait for ParserGetter {
+    fn fill_error_performers(&mut self, packet_manager_obj: &mut PacketManagerCommandExecutor) {
+        let packet_manager_name: &String = &packet_manager_obj.command_obj.basic_command.clone();
 
-    let base_map_of_functions = &mut packet_manager_obj.stage_performers;
-    match name {
-        "zypper" => {
-            let ptr_collection = packet_manager_obj.valid_lines.clone();
-            let table_parser = Box::new(
-                    move |line: &mut String| {
-                        parse_table(line, "|", ptr_collection.borrow_mut().deref_mut());
-                }
-            );
+        let base_map_of_functions: &mut HashMap<Stage, ParserOutput> = &mut packet_manager_obj.stage_errors_performers;
+        let errored_packets_collection: &ErrorPacketCollection = &packet_manager_obj.errored_packages;
 
-            base_map_of_functions.insert(Stage::Install, Box::new(print_line));
-            base_map_of_functions.insert(Stage::Update, Box::new(print_line));
-            base_map_of_functions.insert(Stage::Remove, Box::new(print_line));
-            base_map_of_functions.insert(Stage::Showing, Box::new(print_line));
-            base_map_of_functions.insert(Stage::Search, table_parser.clone());
-            base_map_of_functions.insert(Stage::RepoList, table_parser.clone());
+        let error_configurer: Option<&mut ErrorPerformer> = self.errors_performers.get_mut(packet_manager_name);
 
-            packet_manager_obj.package_index_step = [1, 2, 0, 3];
-            packet_manager_obj.repo_index_step = [1, 3, 6];
-            packet_manager_obj.yes_pointer_str = "Да|Yes".to_string();
-        },
+        if error_configurer.is_some() {
+            let _configurer = error_configurer.unwrap();
 
-        _ => {}
+            _configurer(base_map_of_functions, errored_packets_collection);
+        }
+    }
+
+    fn fill_performers(&mut self, packet_manager_obj: &mut PacketManagerCommandExecutor) {
+        let packet_manager_name: String = packet_manager_obj.command_obj.basic_command.clone();
+
+        let configurer: Option<&mut Performer> = self.standard_performers.get_mut(&packet_manager_name);
+
+        if configurer.is_some() {
+            let _configurer = configurer.unwrap();
+
+            _configurer(packet_manager_obj);
+        }
     }
 }
