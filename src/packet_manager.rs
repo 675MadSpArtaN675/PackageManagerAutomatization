@@ -204,4 +204,7 @@ impl PacketManager for PacketManagerCommandExecutor {
         let _return_code: PacketManagerResultCode = perform_command(basic, sec, Stage::AddRepo, &vec![repo_name.to_string()], true, err_parser, out_parser);
     }
 
+    fn get_base_command_name(&self) -> String {
+        return self.command_obj.basic_command.clone();
+    }
 }

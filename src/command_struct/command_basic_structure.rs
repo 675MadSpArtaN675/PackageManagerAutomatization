@@ -1,3 +1,6 @@
+use json::object;
+use crate::command_struct::packet_manager_trait::JsonTransformable;
+
 pub struct PacketManagerCommand {
     pub basic_command: String,
     pub install_command: String,
@@ -75,4 +78,42 @@ fn create_standard_commands(command_obj: &mut PacketManagerCommand) {
     command_obj.search_command = String::from("search");
     command_obj.update_command = String::from("update");
     command_obj.check_update_command = String::from("upgrade");
+}
+
+impl JsonTransformable for PacketManagerCommand {
+    type ReturnType = PacketManagerCommand;
+
+    fn from_json_obj(json_obj: json::JsonValue) -> Self::ReturnType {
+        return PacketManagerCommand {
+            basic_command: json_obj["basic_command"].as_str().unwrap().to_string(),
+            install_command: json_obj["install_command"].as_str().unwrap().to_string(),
+            remove_command: json_obj["remove_command"].as_str().unwrap().to_string(),
+            search_command: json_obj["search_command"].as_str().unwrap().to_string(),
+            list_command: json_obj["list_command"].as_str().unwrap().to_string(),
+            check_update_command: json_obj["check_update_command"].as_str().unwrap().to_string(),
+            update_command: json_obj["update_command"].as_str().unwrap().to_string(),
+            system_update_command: json_obj["system_update_command"].as_str().unwrap().to_string(),
+            repo_add_command: json_obj["repo_add_command"].as_str().unwrap().to_string(),
+            repo_remove_command: json_obj["repo_remove_command"].as_str().unwrap().to_string(),
+            repo_list_command: json_obj["repo_list_command"].as_str().unwrap().to_string()
+        };
+    }
+
+    fn to_json(&self) -> json::JsonValue {
+        let json_obj = object! {
+            basic_command: self.basic_command.clone(),
+            install_command: self.install_command.clone(),
+            remove_command: self.remove_command.clone(),
+            search_command: self.search_command.clone(),
+            list_command: self.list_command.clone(),
+            check_update_command: self.check_update_command.clone(),
+            update_command: self.update_command.clone(),
+            system_update_command: self.system_update_command.clone(),
+            repo_add_command: self.repo_add_command.clone(),
+            repo_remove_command: self.repo_remove_command.clone(),
+            repo_list_command: self.repo_list_command.clone()
+        };
+
+        return json_obj;
+    }
 }

@@ -2,6 +2,9 @@ use std::rc::Rc;
 use std::fmt::Display;
 use std::cell::RefCell;
 
+use json::{JsonValue, object};
+use crate::command_struct::packet_manager_trait::{JsonTransformable, PackageNamed};
+
 use crate::utility::constants::*;
 
 pub enum PacketManagerResultCode {
@@ -22,6 +25,23 @@ pub enum Stage {
 }
 
 impl Stage {
+    pub fn from_str(name: String) -> Stage {
+        let result: Stage = match name.as_str() {
+            "Install" => Stage::Install,
+            "Update" => Stage::Update,
+            "Remove" => Stage::Remove,
+            "Search" => Stage::Search,
+            "Showing" => Stage::Showing,
+            "RepoList" => Stage::RepoList,
+            "AddRepo" => Stage::AddRepo,
+            "RemoveRepo" => Stage::RemoveRepo,
+
+            _ => Stage::Install
+        };
+
+        return result;
+    }
+
     pub fn to_string(&self) -> &str {
         let result: &str = match &self {
             Stage::Install => "Install",
@@ -74,7 +94,6 @@ impl InstallFlag {
     }
 }
 
-
 pub struct ErroredPacket {
     pub name: String,
     pub stage: Stage
@@ -93,6 +112,89 @@ pub struct Repository {
     pub uri: String
 }
 
+impl JsonTransformable for FoundPackage {
+    type ReturnType = FoundPackage;
+
+    fn from_json_obj(json_obj: JsonValue) -> Self::ReturnType {
+        return FoundPackage {
+            name: json_obj["name"].as_str().unwrap().to_string(),
+            description: json_obj["description"].as_str().unwrap().to_string(),
+            install_flag: InstallFlag::str_to_enum(json_obj["install_flag"].as_str().unwrap()),
+            type_of_packet: json_obj["type_of_package"].as_str().unwrap().to_string()
+        };
+    }
+
+    fn to_json(&self) -> JsonValue {
+        return object! { name: self.name.clone(), description: self.description.clone(), install_flag: self.install_flag.to_string(), type_of_package: self.type_of_packet.clone()};
+    }
+}
+
+impl JsonTransformable for ErroredPacket {
+    type ReturnType = ErroredPacket;
+
+    fn from_json_obj(json_obj: JsonValue) -> Self::ReturnType {
+        return ErroredPacket {
+            name: json_obj["name"].as_str().unwrap().to_string(),
+            stage: Stage::from_str(json_obj["stage"].as_str().unwrap().to_string())
+        };
+    }
+
+    fn to_json(&self) -> JsonValue {
+        return object! { name: self.name.clone(), stage: self.stage.to_string_obj()};
+    }
+}
+
+impl JsonTransformable for Repository {
+    type ReturnType = Repository;
+
+    fn from_json_obj(json_obj: JsonValue) -> Self::ReturnType {
+        return Repository {
+            alias: json_obj["alias"].as_str().unwrap().to_string(),
+            enabled_status: json_obj["enabled_status"].as_bool().unwrap(),
+            uri: json_obj["uri"].as_str().unwrap().to_string()
+        };
+    }
+
+    fn to_json(&self) -> JsonValue {
+        return object! { alias: self.alias.clone(), enabled_status: self.enabled_status, uri: self.uri.clone()};
+    }
+}
+
+impl PackageNamed for FoundPackage {
+    fn get_name(&self) -> String {
+        return self.name.clone();
+    }
+}
+
+impl PackageNamed for ErroredPacket {
+    fn get_name(&self) -> String {
+        return self.name.clone();
+    }
+}
+
+impl PackageNamed for Repository {
+    fn get_name(&self) -> String {
+        return self.alias.clone();
+    }
+}
+
+impl Clone for ErroredPacket {
+    fn clone(&self) -> Self {
+        return ErroredPacket { name: self.name.clone(), stage: self.stage.clone() };
+    }
+}
+
+impl Clone for FoundPackage {
+    fn clone(&self) -> Self {
+        return FoundPackage { name: self.name.clone(), description: self.description.clone(), install_flag: self.install_flag.clone(), type_of_packet: self.type_of_packet.clone() };
+    }
+}
+
+impl Clone for Repository {
+    fn clone(&self) -> Self {
+        return Repository { alias: self.alias.clone(), enabled_status: self.enabled_status.clone(), uri: self.uri.clone() };
+    }
+}
 
 impl std::fmt::Debug for FoundPackage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

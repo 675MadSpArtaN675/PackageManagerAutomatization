@@ -1,4 +1,4 @@
-mod utility;
+pub mod utility;
 pub mod command_struct;
 
 mod parsers;
