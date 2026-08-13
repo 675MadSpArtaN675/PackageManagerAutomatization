@@ -5,6 +5,8 @@ use crate::utility::{Stage, ErroredPacket};
 use crate::PacketManagerCommandExecutor;
 use crate::command_struct::packet_manager_trait::ParserOutput;
 
+use log::info;
+
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -57,7 +59,7 @@ pub(crate) fn zypper_preprocessing(packet_manager_obj: &mut PacketManagerCommand
 }
 
 fn print_line(line: &mut String) {
-    println!("Line: {}", line.clone());
+    info!("Manager output - {}", line.clone());
 }
 
 fn parse_table(line: &mut String, partitioner: &str, packets_found: &mut Vec<String>) {
