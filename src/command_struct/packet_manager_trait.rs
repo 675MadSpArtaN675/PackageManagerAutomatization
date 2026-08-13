@@ -19,6 +19,7 @@ pub trait PacketManager {
     fn update_system(&mut self) -> PacketManagerResultCode;
 
     fn repos(&mut self) -> Vec<Repository>;
+    fn has_repo(&mut self, name: String) -> bool;
     fn add_repo(&mut self, repo_name: &str, repo_url: &str);
     fn remove_repo(&mut self, repo_name: &str);
 

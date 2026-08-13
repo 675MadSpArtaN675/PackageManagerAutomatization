@@ -190,6 +190,14 @@ impl PacketManager for PacketManagerCommandExecutor {
         return create_repo(&self.valid_lines, &self.repo_index_step, self.yes_pointer_str.clone().as_str());
     }
 
+    fn has_repo(&mut self, name: String) -> bool {
+        let repos = self.repos();
+
+        let filtered_repos: Vec<Repository> = repos.iter().filter(|c| c.alias.clone() == name).cloned().collect();
+
+        return filtered_repos.len() > 0;
+    }
+
     fn add_repo(&mut self, repo_name: &str, repo_url: &str) {
         let (basic, sec) = (self.command_obj.basic_command.clone(), self.command_obj.repo_add_command.clone());
         let (out_parser, err_parser) = self.get_performers(Stage::AddRepo);
@@ -199,9 +207,9 @@ impl PacketManager for PacketManagerCommandExecutor {
 
     fn remove_repo(&mut self, repo_name: &str) {
         let (basic, sec) = (self.command_obj.basic_command.clone(), self.command_obj.repo_remove_command.clone());
-        let (out_parser, err_parser) = self.get_performers(Stage::AddRepo);
+        let (out_parser, err_parser) = self.get_performers(Stage::RemoveRepo);
 
-        let _return_code: PacketManagerResultCode = perform_command(basic, sec, Stage::AddRepo, &vec![repo_name.to_string()], true, err_parser, out_parser);
+        let _return_code: PacketManagerResultCode = perform_command(basic, sec, Stage::RemoveRepo, &vec![repo_name.to_string()], true, err_parser, out_parser);
     }
 
     fn get_base_command_name(&self) -> String {

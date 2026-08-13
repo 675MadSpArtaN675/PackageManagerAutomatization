@@ -68,7 +68,7 @@ impl Display for Stage {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum InstallFlag {
     Installed,
     InstalledPlus,
