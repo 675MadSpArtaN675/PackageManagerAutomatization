@@ -1,5 +1,26 @@
-use json::object;
+use std::collections::HashMap;
+
+use once_cell::sync::Lazy;
+use json::{object, parse};
+
 use crate::command_struct::packet_manager_trait::JsonTransformable;
+
+static COMMAND_CONFIG: Lazy<HashMap<String, PacketManagerCommand>> = Lazy::new(|| {
+    let mut result: HashMap<String, PacketManagerCommand> = HashMap::new();
+    let json_conf = include_str!("command_config.json");
+
+    let obj = parse(json_conf);
+
+    if let Ok(json_obj) = obj {
+        for name_manager in json_obj.entries() {
+            let (name, man_conf) = name_manager;
+
+            result.insert(String::from(name), PacketManagerCommand::from_json_obj(man_conf.clone()));
+        }
+    }
+
+    result
+});
 
 pub struct PacketManagerCommand {
     pub basic_command: String,
@@ -40,44 +61,29 @@ impl PacketManagerCommand {
 }
 
 fn get_packet_manager_preset(base_command_name: String) -> PacketManagerCommand {
-    let mut command_obj: PacketManagerCommand = PacketManagerCommand::new_empty(base_command_name.clone());
+    if let Some(result) = COMMAND_CONFIG.get(&base_command_name).cloned() {
+        return result;
+    }
 
-    match base_command_name.as_str() {
-        "zypper" => {
-            create_standard_commands(&mut command_obj);
-            command_obj.install_command += " -y";
-            command_obj.remove_command += " -y";
-            command_obj.list_command = "search --installed-only".to_string();
-            command_obj.update_command += " -y";
-            command_obj.check_update_command = String::from("refresh");
-            command_obj.system_update_command = String::from("dist-upgrade -y");
-            command_obj.repo_list_command = "repos -U".to_string();
-            command_obj.repo_add_command = "addrepo".to_string();
-            command_obj.repo_remove_command = "removerepo".to_string();
-        },
-        "dnf" => {
-            create_standard_commands(&mut command_obj);
-            command_obj.list_command = "list --installed".to_string();
-            command_obj.update_command = String::from("upgrade");
-            command_obj.check_update_command = String::from("check");
-        },
-        "apt" => {
-            create_standard_commands(&mut command_obj);
-            command_obj.list_command = "list installed".to_string();
-        }
-
-        _ => {},
-    };
-
-    return command_obj;
+    panic!("Unknown package manager");
 }
 
-fn create_standard_commands(command_obj: &mut PacketManagerCommand) {
-    command_obj.install_command = String::from("install");
-    command_obj.remove_command = String::from("remove");
-    command_obj.search_command = String::from("search");
-    command_obj.update_command = String::from("update");
-    command_obj.check_update_command = String::from("upgrade");
+impl Clone for PacketManagerCommand {
+    fn clone(&self) -> Self {
+        return PacketManagerCommand {
+            basic_command: self.basic_command.clone(),
+            install_command: self.install_command.clone(),
+            remove_command: self.remove_command.clone(),
+            search_command: self.search_command.clone(),
+            list_command: self.list_command.clone(),
+            check_update_command: self.check_update_command.clone(),
+            update_command: self.update_command.clone(),
+            system_update_command: self.system_update_command.clone(),
+            repo_add_command: self.repo_add_command.clone(),
+            repo_remove_command: self.repo_remove_command.clone(),
+            repo_list_command: self.repo_list_command.clone()
+        };
+    }
 }
 
 impl JsonTransformable for PacketManagerCommand {

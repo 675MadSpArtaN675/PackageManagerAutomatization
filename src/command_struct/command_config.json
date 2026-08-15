@@ -1,0 +1,41 @@
+{
+	"zypper": {
+		"commands": {
+			"install": "install",
+			"remove": "remove",
+			"search": "search",
+			"update": "update",
+			"check_update": "list-updates",
+			"system_update": "dist-upgrade",
+			"repo_list": "repos",
+			"repo_add": "addrepo",
+			"repo_remove": "removerepo"
+		}
+	},
+	"apt": {
+		"commands": {
+			"install": "install",
+			"remove": "remove",
+			"search": "search",
+			"update": "update",
+			"check_update": "list --upgradable",
+			"system_update": "full-upgrade",
+			"repo_list": "list",
+			"repo_add": "add-apt-repository",
+			"repo_remove": "remove"
+		}
+	},
+	"dnf": {
+		"commands": {
+			"install": "install",
+			"remove": "remove",
+			"search": "search",
+			"update": "update",
+			"check_update": "check-update",
+			"system_update": "upgrade",
+			"repo_list": "repolist",
+			"repo_add": "config-manager --add-repo",
+			"repo_remove": "config-manager --set-disabled"
+		}
+	}
+}
