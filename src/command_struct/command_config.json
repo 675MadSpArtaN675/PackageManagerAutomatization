@@ -1,13 +1,13 @@
 {
 	"zypper": {
 		"commands": {
-			"install": "install",
-			"remove": "remove",
-			"search": "search",
+			"install": "install -y",
+			"remove": "remove -y",
+			"search": "search --installed-only",
 			"update": "update",
 			"check_update": "list-updates",
-			"system_update": "dist-upgrade",
-			"repo_list": "repos",
+			"system_update": "dist-upgrade -y",
+			"repo_list": "repos -U",
 			"repo_add": "addrepo",
 			"repo_remove": "removerepo"
 		}
